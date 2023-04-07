@@ -10,7 +10,7 @@
 
 static inline char to_char(uint8_t value)
 {
-	return (32 <= value && value <= 127) ? (char)value : '.';
+	return (32 <= value && value < 127) ? (char)value : '.';
 }
 
 static inline uint16_t to_index(int index, uint8_t base)

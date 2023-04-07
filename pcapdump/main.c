@@ -103,6 +103,11 @@ int main(int argc, char** argv)
         exit(1);
     }
 
+    if (pcap_read(pcap, NULL)) {
+        pcap_close(pcap);
+        exit(1);
+    }
+
     pcap_print(pcap);
 
     pcap_close(pcap);

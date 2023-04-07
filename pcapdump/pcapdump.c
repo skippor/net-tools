@@ -66,15 +66,17 @@ int pcap_read(pcap_t* pcap, const char *filter)
 			return 1;
 		}
 
+		pcap->pkts = realloc(pcap->pkts, (pcap->count + 1) * sizeof(packet_t *));
 		packet_t *packet = malloc(sizeof(packet_t) + head.caplen);
 		packet->size = head.caplen;
 
-		if (fread(packet, 1, head.caplen, pcap->fp) != head.caplen) {
+		if (fread(packet->data, 1, head.caplen, pcap->fp) != head.caplen) {
 			fprintf(stderr, "Packet %d: Read packet data failed\n", pcap->count);
 			free(packet);
 			return 1;
 		}
 
+		pcap->pkts[pcap->count] = packet;
 		++ pcap->count;
 	}
 
@@ -89,22 +91,27 @@ int pcap_write(pcap_t* pcap, const char *pcapfile)
 int pcap_print(pcap_t* pcap)
 {
 	int i;
-
-	for (i = 1; pcap->count; ++i) {
+	printf("packet count: %d\n", pcap->count);
+	for (i = 0; i < pcap->count; ++i) {
 		char *curr = pcap->pkts[i]->data;
 		l2_head_st *l2hdr = (l2_head_st *)curr;
 		curr += sizeof(l2_head_st);
 
 		/* 只处理ipv4的包 */
-		if (l2hdr->proto != htons(0x800))
+		if (l2hdr->proto != htons(0x800)) {
+			printf("%d    not ipv4(%x), continue\n", i, l2hdr->proto);
 			continue;
+		}
 
 		struct iphdr *iph = (struct iphdr *)curr;
 		curr += (iph->ihl * 4);
 
 		/* 不处理分片包 */
-		if (iph->frag_off & htons(0x3fff))
+		if (iph->frag_off & htons(0x3fff)) {
+			printf("%d    %u.%u.%u.%u -> %u.%u.%u.%u FRAGMENT, continue\n",
+					i, NIPQUAD(iph->saddr), NIPQUAD(iph->daddr));
 			continue;
+		}
 
 		struct tcphdr *tcph = NULL;
 		struct udphdr *udph = NULL;
@@ -116,13 +123,15 @@ int pcap_print(pcap_t* pcap)
 			udph = (struct udphdr *)curr;
 			curr += (sizeof(struct udphdr));
 		} else {
+			printf("%d    %u.%u.%u.%u -> %u.%u.%u.%u proto:%u, continue\n",
+					i, NIPQUAD(iph->saddr), NIPQUAD(iph->daddr), iph->protocol);
 			continue;
 		}
 
 		const char *udata = curr;
 		uint16_t ldata = ntohs(iph->tot_len) - (curr - (char *)iph);
 
-		printf("%d--\n%s, %u.%u.%u.%u:%u->%u.%u.%u.%u:%u\nuser data len: %d\n", i, tcph ? "TCP":"UDP",
+		printf("%d %s, %u.%u.%u.%u:%u -> %u.%u.%u.%u:%u user data len: %d\n", i, tcph ? "TCP":"UDP",
 			NIPQUAD(iph->saddr), tcph ? ntohs(tcph->source) : ntohs(udph->source),
 			NIPQUAD(iph->daddr), tcph ? ntohs(tcph->dest) : ntohs(udph->dest), ldata);
 	}
@@ -142,6 +151,7 @@ void pcap_close(pcap_t* pcap)
 		free(pcap->pkts[i]);
 		pcap->pkts[i] = NULL;
 	}
+	free(pcap->pkts);
 	pcap->count = 0;
 
 	fclose(pcap->fp);

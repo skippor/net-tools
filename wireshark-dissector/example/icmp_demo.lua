@@ -1,4 +1,4 @@
--- ICMP Dissector script by dtt
+-- ICMP Dissector script example
 
 local PROTO_NAME = "ICMPvS"
 local PROTO_DESC = "ICMP Protocal vS"

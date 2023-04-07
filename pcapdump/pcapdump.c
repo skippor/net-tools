@@ -23,7 +23,6 @@ struct pcap_st {
 	pcap_info_st 	pi;
 };
 
-
 pcap_t* pcap_open(const char *pcapfile)
 {
 	pcap_t *pcap = (pcap_t *)malloc(sizeof(pcap_t));
@@ -32,7 +31,6 @@ pcap_t* pcap_open(const char *pcapfile)
 		fprintf(stderr, "File is not exist: %s\n", pcapfile);
 		return NULL;
 	}
-
 
 	if (fread(&pcap->pi, sizeof(pcap->pi), 1, pcap->fp) != 1) {
 		fprintf(stderr, "Failed to read pcap head: %s\n", pcapfile);
@@ -50,6 +48,7 @@ pcap_t* pcap_open(const char *pcapfile)
 	}
 
 	return pcap;
+
 err:
 	fclose(pcap->fp);
 	free(pcap);
@@ -61,35 +60,12 @@ int pcap_read(pcap_t* pcap, const char *filter)
 	return 0;
 }
 
-int pcap_print(pcap_t* pcap)
-{
-	return 0;
-}
-
 int pcap_write(pcap_t* pcap, const char *pcapfile)
 {
 	return 0;
 }
 
-void pcap_close(pcap_t* pcap)
-{
-	if (pcap) {
-		fclose(pcap->fp);
-		free(pcap);
-	}
-}
-
-
-static void print_packet(int pkti, const l2_head_st *l2h, const struct iphdr *iph,
-						const struct tcphdr *tcph, const struct udphdr *udph,
-						const char *data, uint16_t ldata)
-{
-	printf("%d--\n%s, %u.%u.%u.%u:%u->%u.%u.%u.%u:%u\nuser data len: %d\n", pkti, tcph ? "TCP":"UDP",
-			NIPQUAD(iph->saddr), tcph ? ntohs(tcph->source) : ntohs(udph->source),
-			NIPQUAD(iph->daddr), tcph ? ntohs(tcph->dest) : ntohs(udph->dest), ldata);
-}
-
-int pcap_dump(pcap_t* pcap)
+int pcap_print(pcap_t* pcap)
 {
 	packet_head_st head;
 	int pkt_counter;
@@ -142,4 +118,17 @@ int pcap_dump(pcap_t* pcap)
 	}
 
 	return 0;
+}
+
+void pcap_close(pcap_t* pcap)
+{
+	if (pcap) {
+		fclose(pcap->fp);
+		free(pcap);
+	}
+}
+
+void pcap_foreach(pcap_t* pcap, int(*callback)(void*, void*), void* userdata)
+{
+
 }

@@ -98,7 +98,14 @@ int main(int argc, char** argv)
         exit(1);
     }
 
+    pcap_t *pcap = pcap_open(params->input);
+    if (!pcap) {
+        exit(1);
+    }
 
+    pcap_print(pcap);
+
+    pcap_close(pcap);
     return 0;
 }
 

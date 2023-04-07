@@ -14,31 +14,30 @@
 #endif
 #define VERSION "1.0.0"
 
-#define MODE_DECODE    0
-#define MODE_ENCODE    1
-
 static struct option s_options[] =
 {
-    {"base64",      no_argument,        NULL,   'b'},
+    {"read",        no_argument,        NULL,   'r'},
+    {"write",       no_argument,        NULL,   'w'},
     {"help",        no_argument,        NULL,   'h'},
     {"version",     no_argument,        NULL,   'v'},
     {NULL,          0,                  NULL,    0 },
 };
 
-static const char *s_optstr = ":hvb";
+static const char *s_optstr = ":hvwr";
 
 static void print_usage(void)
 {
     fprintf(stderr, "Usage: "APPNAME" <options> <file>          \n"
            "  Options:                                          \n"
-           "    -b, --base64         File encoded with base64   \n"
+           "    -r, --read          Read pcaps from file        \n"
+           "    -w, --write         Write pcaps to file         \n"
            "                                                    \n"
-           "    -v, --version        Print version details      \n"
-           "    -h, --help           Show this help message     \n"
+           "    -v, --version       Print version details       \n"
+           "    -h, --help          Show this help message      \n"
            "                                                    \n"
            "  Example:                                          \n"
-           "    - "APPNAME" envelop.bin                         \n"
-           "    - "APPNAME" -b envelop.evp                      \n"
+           "    - "APPNAME" -r test.pcap                        \n"
+           "    - "APPNAME" -w test.pcap                        \n"
            "                                                    \n"
     );
 }
@@ -52,7 +51,7 @@ static void print_version(void)
 
 struct param_st {
     const char * input;
-    int base64;
+    int mode;
 };
 
 static struct param_st s_params;
@@ -63,8 +62,11 @@ static int parse_options(int argc, char** argv, struct param_st *params)
     while((opt = getopt_long(argc, argv, s_optstr, s_options, NULL)) != -1)
     {
         switch (opt) {
-            case 'b':
-                params->base64 = 1;
+            case 'r':
+                params->mode = 0;
+                break;
+            case 'w':
+                params->mode = 1;
                 break;
             case 'v':
                 print_version();

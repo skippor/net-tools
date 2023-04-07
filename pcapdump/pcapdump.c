@@ -12,15 +12,16 @@
 #include "pcapinfo.h"
 #include "pcapdump.h"
 
-struct vpkt_st {
+typedef struct packet_st {
 	uint32_t 	size;
-	uint8_t 	*data;
-};
+	uint8_t 	data[0];
+} packet_t;
 
 struct pcap_st {
-	FILE 			*fp;
-	uint32_t 		count;
-	pcap_info_st 	pi;
+	FILE 		*fp;
+	uint32_t	count;
+	pcap_info_t	info;
+	packet_t	**pkts;
 };
 
 pcap_t* pcap_open(const char *pcapfile)
@@ -32,18 +33,18 @@ pcap_t* pcap_open(const char *pcapfile)
 		return NULL;
 	}
 
-	if (fread(&pcap->pi, sizeof(pcap->pi), 1, pcap->fp) != 1) {
+	if (fread(&pcap->info, sizeof(pcap->info), 1, pcap->fp) != 1) {
 		fprintf(stderr, "Failed to read pcap head: %s\n", pcapfile);
 		goto err;
 	}
 
-	if (pcap->pi.magic != 0xa1b2c3d4) {
+	if (pcap->info.magic != 0xa1b2c3d4) {
 		fprintf(stderr, "Invalid pcap file magic: %s\n", pcapfile);
 		goto err;
 	}
 
-	if (pcap->pi.linktype != 1) {
-		fprintf(stderr, "Unsupport pcap linktype(%u): %s\n", pcap->pi.linktype, pcapfile);
+	if (pcap->info.linktype != 1) {
+		fprintf(stderr, "Unsupport pcap linktype(%u): %s\n", pcap->info.linktype, pcapfile);
 		goto err;
 	}
 
@@ -57,6 +58,26 @@ err:
 
 int pcap_read(pcap_t* pcap, const char *filter)
 {
+	packet_head_st head;
+	while (fread(&head, sizeof(head), 1, pcap->fp) == 1) {
+		if (head.caplen > pcap->info.snaplen || head.caplen > MAX_PACKET_LEN) {
+			fprintf(stderr, "Packet %d: Invalid packet head(caplen: %u > snaplen: %u)\n",
+				pcap->count, head.caplen, pcap->info.snaplen);
+			return 1;
+		}
+
+		packet_t *packet = malloc(sizeof(packet_t) + head.caplen);
+		packet->size = head.caplen;
+
+		if (fread(packet, 1, head.caplen, pcap->fp) != head.caplen) {
+			fprintf(stderr, "Packet %d: Read packet data failed\n", pcap->count);
+			free(packet);
+			return 1;
+		}
+
+		++ pcap->count;
+	}
+
 	return 0;
 }
 
@@ -67,23 +88,10 @@ int pcap_write(pcap_t* pcap, const char *pcapfile)
 
 int pcap_print(pcap_t* pcap)
 {
-	packet_head_st head;
-	int pkt_counter;
+	int i;
 
-	for (pkt_counter = 1; fread(&head, sizeof(head), 1, pcap->fp) == 1; ++pkt_counter) {
-		if (head.caplen > pcap->pi.snaplen || head.caplen > MAX_PACKET_LEN) {
-			fprintf(stderr, "Packet %d: Invalid packet head(caplen: %u > snaplen: %u)\n",
-				pkt_counter, head.caplen, pcap->pi.snaplen);
-			return 1;
-		}
-
-		char data[MAX_PACKET_LEN];
-		if (fread(data, 1, head.caplen, pcap->fp) != head.caplen) {
-			fprintf(stderr, "Packet %d: Read packet data failed\n", pkt_counter);
-			return 1;
-		}
-
-		char *curr = data;
+	for (i = 1; pcap->count; ++i) {
+		char *curr = pcap->pkts[i]->data;
 		l2_head_st *l2hdr = (l2_head_st *)curr;
 		curr += sizeof(l2_head_st);
 
@@ -114,7 +122,7 @@ int pcap_print(pcap_t* pcap)
 		const char *udata = curr;
 		uint16_t ldata = ntohs(iph->tot_len) - (curr - (char *)iph);
 
-		print_packet(pkt_counter, l2hdr, iph, tcph, udph, udata, ldata);
+		print_packet(i, l2hdr, iph, tcph, udph, udata, ldata);
 	}
 
 	return 0;
@@ -122,10 +130,20 @@ int pcap_print(pcap_t* pcap)
 
 void pcap_close(pcap_t* pcap)
 {
-	if (pcap) {
-		fclose(pcap->fp);
-		free(pcap);
+	int i;
+	if (!pcap) {
+		return;
 	}
+
+	/* 释放数据包 */
+	for (i = 0; i < pcap->count; ++i) {
+		free(pcap->pkts[i]);
+		pcap->pkts[i] = NULL;
+	}
+	pcap->count = 0;
+
+	fclose(pcap->fp);
+	free(pcap);
 }
 
 void pcap_foreach(pcap_t* pcap, int(*callback)(void*, void*), void* userdata)

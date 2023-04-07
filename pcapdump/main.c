@@ -106,6 +106,8 @@ int main(int argc, char** argv)
     pcap_print(pcap);
 
     pcap_close(pcap);
+    pcap = NULL;
+
     return 0;
 }
 

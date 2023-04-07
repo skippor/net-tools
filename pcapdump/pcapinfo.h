@@ -14,7 +14,7 @@ typedef struct pcap_info_st {
 	uint32_t sigfigs;			/* 时间戳0 */
 	uint32_t snaplen;			/* 数据包最大长度 */
 	uint32_t linktype;			/* 链路层类型 */
-} pcap_info_st;
+} pcap_info_t;
 
 /* pcap每包头部 */
 typedef struct packet_head_st {

@@ -122,7 +122,9 @@ int pcap_print(pcap_t* pcap)
 		const char *udata = curr;
 		uint16_t ldata = ntohs(iph->tot_len) - (curr - (char *)iph);
 
-		print_packet(i, l2hdr, iph, tcph, udph, udata, ldata);
+		printf("%d--\n%s, %u.%u.%u.%u:%u->%u.%u.%u.%u:%u\nuser data len: %d\n", i, tcph ? "TCP":"UDP",
+			NIPQUAD(iph->saddr), tcph ? ntohs(tcph->source) : ntohs(udph->source),
+			NIPQUAD(iph->daddr), tcph ? ntohs(tcph->dest) : ntohs(udph->dest), ldata);
 	}
 
 	return 0;

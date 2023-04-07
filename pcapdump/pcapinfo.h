@@ -37,13 +37,4 @@ typedef struct l2_head_st {
 	((const unsigned char *)&addr)[2], \
 	((const unsigned char *)&addr)[3]
 
-static void print_packet(int pkti, const l2_head_st *l2h, const struct iphdr *iph,
-						const struct tcphdr *tcph, const struct udphdr *udph,
-						const char *data, uint16_t ldata)
-{
-	printf("%d--\n%s, %u.%u.%u.%u:%u->%u.%u.%u.%u:%u\nuser data len: %d\n", pkti, tcph ? "TCP":"UDP",
-			NIPQUAD(iph->saddr), tcph ? ntohs(tcph->source) : ntohs(udph->source),
-			NIPQUAD(iph->daddr), tcph ? ntohs(tcph->dest) : ntohs(udph->dest), ldata);
-}
-
 #endif

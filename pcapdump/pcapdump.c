@@ -121,6 +121,25 @@ int pcap_write(pcap_t* pcap, const char *pcapfile)
 	return 0;
 }
 
+void pcap_close(pcap_t* pcap)
+{
+	int i;
+	if (!pcap) {
+		return;
+	}
+
+	/* 释放数据包 */
+	for (i = 0; i < pcap->count; ++i) {
+		free(pcap->pkts[i]);
+		pcap->pkts[i] = NULL;
+	}
+	free(pcap->pkts);
+	pcap->count = 0;
+
+	fclose(pcap->fp);
+	free(pcap);
+}
+
 int pcap_print(pcap_t* pcap)
 {
 	int i;
@@ -170,28 +189,4 @@ int pcap_print(pcap_t* pcap)
 	}
 
 	return 0;
-}
-
-void pcap_close(pcap_t* pcap)
-{
-	int i;
-	if (!pcap) {
-		return;
-	}
-
-	/* 释放数据包 */
-	for (i = 0; i < pcap->count; ++i) {
-		free(pcap->pkts[i]);
-		pcap->pkts[i] = NULL;
-	}
-	free(pcap->pkts);
-	pcap->count = 0;
-
-	fclose(pcap->fp);
-	free(pcap);
-}
-
-void pcap_foreach(pcap_t* pcap, int(*callback)(void*, void*), void* userdata)
-{
-
 }

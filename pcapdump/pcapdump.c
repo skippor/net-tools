@@ -7,6 +7,7 @@
 #include <netinet/in.h>
 #include <netinet/tcp.h>
 #include <netinet/udp.h>
+#include <netinet/if_ether.h>
 #include <arpa/inet.h>
 
 #include "pcapdump.h"
@@ -31,13 +32,6 @@ typedef struct packet_head_st {
 	uint32_t caplen;			/* 被抓取部分的长度 */
 	uint32_t len;				/* 数据包原长度 */
 } packet_head_st;
-
-/* 二层头，ethhdr，为了避免引入linux/if_ether.h，这里单独定义 */
-typedef struct l2_head_st {
-	char dest[6];				/* 目的mac地址 */
-	char source[6];				/* 源mac地址 */
-	uint16_t proto;				/* 三层协议 */
-} l2_head_st;
 
 #define NIPQUAD(addr) \
 	((const unsigned char *)&addr)[0], \
@@ -146,12 +140,12 @@ int pcap_print(pcap_t* pcap)
 	printf("packet count: %d\n", pcap->count);
 	for (i = 0; i < pcap->count; ++i) {
 		char *curr = pcap->pkts[i]->data;
-		l2_head_st *l2hdr = (l2_head_st *)curr;
-		curr += sizeof(l2_head_st);
+		struct ethhdr *l2hdr = (struct ethhdr *)curr;
+		curr += sizeof(struct ethhdr);
 
 		/* 只处理ipv4的包 */
-		if (l2hdr->proto != htons(0x800)) {
-			printf("%d    not ipv4(%x), continue\n", i, l2hdr->proto);
+		if (l2hdr->h_proto != htons(0x800)) {
+			printf("%d    not ipv4(%x), continue\n", i, l2hdr->h_proto);
 			continue;
 		}
 
@@ -183,7 +177,7 @@ int pcap_print(pcap_t* pcap)
 		const char *udata = curr;
 		uint16_t ldata = ntohs(iph->tot_len) - (curr - (char *)iph);
 
-		printf("%d %s, %u.%u.%u.%u:%u -> %u.%u.%u.%u:%u user data len: %d\n", i, tcph ? "TCP":"UDP",
+		printf("%d %s, %u.%u.%u.%u:%u -> %u.%u.%u.%u:%u data len: %d\n", i, tcph ? "TCP":"UDP",
 			NIPQUAD(iph->saddr), tcph ? ntohs(tcph->source) : ntohs(udph->source),
 			NIPQUAD(iph->daddr), tcph ? ntohs(tcph->dest) : ntohs(udph->dest), ldata);
 	}

@@ -32,12 +32,11 @@ int push_udp_hdr(struct udphdr *udph, uint16_t sport, uint16_t dport, uint16_t l
 int push_ipv4_hdr(struct iphdr *iph, uint32_t saddr, uint32_t daddr, uint8_t proto,
                     uint16_t len, uint8_t df, int16_t id, uint8_t tos)
 {
-#define DONT_FRAG 0x1fff
     iph->ihl = 5;
     iph->version = 4;
     iph->tos = tos;
     iph->tot_len = htons(len);
-    iph->frag_off = df ? htons(DONT_FRAG) : 0;
+    iph->frag_off = df ? htons(0x4000) : 0;
     iph->ttl = 64;
     iph->id = id;
     iph->protocol = proto;

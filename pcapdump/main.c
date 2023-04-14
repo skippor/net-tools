@@ -5,7 +5,6 @@
 #include <getopt.h>
 
 #include "pcapdump.h"
-#include "hexdump.h"
 
 #define REG __attribute__((section(".xversion"), used, aligned(1)))
 

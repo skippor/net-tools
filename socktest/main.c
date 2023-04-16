@@ -1,9 +1,23 @@
-#include <sdtio.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <unistd.h>
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
+
 #include "xsocket.h"
 
 int run_client()
 {
-    int fd = create_udp_socket("127.0.0.1", 54321);
+	struct sockaddr_in addr;
+	int len = 0;
+	int addr_len = sizeof(struct sockaddr_in);
+	char buffer[256];
+
+    int sockfd = create_udp_socket("127.0.0.1", 54321);
+	(void)set_nonblock(sockfd);
 
     /* 填写sockaddr_in*/
     bzero(&addr, sizeof(addr));
@@ -28,12 +42,19 @@ int run_client()
 		printf("Receive from server: %s\n", buffer);
 	}
 
+	close(sockfd);
     return 0;
 }
 
 int run_server()
 {
-    int fd = create_udp_socket("127.0.0.1", 12345);
+	struct sockaddr_in addr;
+	int len = 0;
+	int addr_len = sizeof(struct sockaddr_in);
+	char buffer[256];
+
+    int sockfd = create_udp_socket("127.0.0.1", 12345);
+	//(void)set_nonblock(sockfd);
 
     while(1) {
 		bzero(buffer, sizeof(buffer));
@@ -46,10 +67,17 @@ int run_server()
 		sendto(sockfd,buffer, len, 0, (struct sockaddr *)&addr, addr_len);
 	}
 
+	close(sockfd);
     return 0;
 }
 
 int main(int argc, char** argv)
 {
+	if (argc > 1 && strcmp(argv[1], "-c") == 0) {
+		return run_client();
+	} else {
+		return run_server();
+	}
+
     return 0;
 }

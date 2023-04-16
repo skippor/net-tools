@@ -1,4 +1,4 @@
-TARGET  = pcapdump
+TARGET  = socktest
 
 INCLUDE ?= ./include
 LIBDIR ?= ./libs

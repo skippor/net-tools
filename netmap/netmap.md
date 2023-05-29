@@ -1,5 +1,9 @@
 git clone https://github.com/luigirizzo/netmap.git
 
+https://juejin.cn/post/7125483979792187399
+https://zhuanlan.zhihu.com/p/607854526
+https://abcdxyzk.github.io/blog/2020/05/21/netmap/
+
 apt install linux-source
 cd /usr/src
 tar -xvjf linux-source-5.15.0.tar.bz2

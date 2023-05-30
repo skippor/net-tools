@@ -55,3 +55,14 @@ int push_eth_hdr(struct ethhdr *ehdr, const uint8_t smac[6], const uint8_t dmac[
 
     return 0;
 }
+
+int push_icmph(struct icmp *icmph, uint8_t type, uint8_t code, uint16_t id, uint16_t seq)
+{
+    icmph->icmp_type = type;
+    icmph->icmp_code = code;
+    icmph->icmp_id = id;
+    icmph->icmp_seq = seq;
+
+    icmph->icmp_cksum = 0;
+    //icmph->icmp_cksum = in_cksum();
+}
